@@ -13,13 +13,14 @@ type NhomHang struct {
 func (NhomHang) TableName() string { return "nhom_hangs" }
 
 type ItemGroupCreation struct {
-	Id      int    `gorm:"column:id" json:"-"`
+	common.SQLModel
 	TenNhom string `gorm:"column:ten_nhom;type:varchar(255)" json:"tenNhom"`
 }
 
 func (ItemGroupCreation) TableName() string { return NhomHang{}.TableName() }
 
 type ItemGroupUpdate struct {
+	common.SQLModel
 	TenNhom *string `gorm:"column:ten_nhom;type:varchar(255)" json:"tenNhom"`
 }
 

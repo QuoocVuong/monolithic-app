@@ -58,7 +58,7 @@ func main() {
 
 		// ======================================= INVENTORY =======================================
 		// Routes cho kho_hang
-		khohangs := v1.Group("/kho-hangs") // Tạo group /v1/kho-hangs
+		khohangs := v1.Group("/khohangs") // Tạo group /v1/kho-hangs
 		{
 			khohangs.POST("", inventoryhandler.CreateKhoHang(db))       // POST /v1/kho-hangs: Tạo kho hàng mới
 			khohangs.GET("", inventoryhandler.ListKhoHang(db))          // GET /v1/kho-hangs: Lấy danh sách kho hàng
@@ -68,7 +68,7 @@ func main() {
 		}
 
 		// Routes cho ton_kho
-		tonkhos := v1.Group("/ton-khos") // Tạo group /v1/ton-khos
+		tonkhos := v1.Group("/tonkhos") // Tạo group /v1/ton-khos
 		{
 			tonkhos.POST("", inventoryhandler.CreateTonKho(db))       // POST /v1/ton-khos: Tạo tồn kho mới
 			tonkhos.GET("", inventoryhandler.ListTonKho(db))          // GET /v1/ton-khos: Lấy danh sách tồn kho
@@ -78,7 +78,7 @@ func main() {
 		}
 
 		// Routes cho du_kien_ton_kho
-		dukienTonkhos := v1.Group("/du-kien-ton-khos") // Tạo group /v1/du-kien-ton-khos
+		dukienTonkhos := v1.Group("/dukientonkhos") // Tạo group /v1/du-kien-ton-khos
 		{
 			dukienTonkhos.POST("", inventoryhandler.CreateDuKienTonKho(db))       // POST /v1/du-kien-ton-khos: Tạo dự kiến tồn kho mới
 			dukienTonkhos.GET("", inventoryhandler.ListDuKienTonKho(db))          // GET /v1/du-kien-ton-khos: Lấy danh sách dự kiến tồn kho
