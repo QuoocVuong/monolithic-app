@@ -85,11 +85,11 @@ func (s *sqlStore) ListTonKho(
 	}
 
 	if v := paging.Sort; v != "" {
-		if err := db.Order(v); err != nil {
+		if err := db.Order(v).Error; err != nil {
 			return nil, err
 		}
 	} else {
-		db = db.Order("id desc")
+		db.Order("id desc")
 	}
 
 	if err := db.
