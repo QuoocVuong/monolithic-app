@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -10,6 +11,23 @@ import (
 	"monolithic-app/modules/product/model"
 	"monolithic-app/modules/product/transport/producthandler"
 )
+
+// ĐỊNH NGHĨA corsMiddleware Ở NGOÀI HÀM main
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5174")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
 
 func main() {
 	// Database setup
@@ -30,6 +48,8 @@ func main() {
 
 	// Khởi tạo Gin router
 	r := gin.Default()
+	// CORS configuration for Gin
+	r.Use(corsMiddleware())
 
 	// Tạo group /v1 cho API
 	v1 := r.Group("/v1")
@@ -87,7 +107,7 @@ func main() {
 			//dukienTonkhos.GET("/:id", inventoryhandler.GetDuKienTonKho(db))      // GET /v1/du-kien-ton-khos/:id: Lấy chi tiết dự kiến tồn kho
 		}
 	}
-
-	// Chạy web server ở cổng 8080
+	fmt.Println("Server listening on port 8080...")
 	r.Run(":8080")
+
 }
