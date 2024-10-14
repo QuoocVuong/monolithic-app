@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"gorm.io/gorm"
 	"monolithic-app/common"
 	"time"
 )
@@ -10,11 +11,30 @@ var (
 	ErrMaHangIsBlank  = errors.New("MaHang CanNot Is Blank")
 	ErrProductDeleted = errors.New("product is deleted")
 )
+var (
+	ErrItemGroupIsBlank = errors.New("Nhom Hang CanNot Is Blank")
+	ErrItemGroupDeleted = errors.New("Nhom Hang is deleted")
+)
 
 type NhomHang struct {
 	common.SQLModel
 	TenNhom string `gorm:"column:ten_nhom;type:varchar(255)" json:"tenNhom"`
 }
+
+func (NhomHang) TableName() string { return "nhom_hangs" }
+
+type ItemGroupCreation struct {
+	Id      int    `gorm:"column:id" json:"-"`
+	TenNhom string `gorm:"column:ten_nhom;type:varchar(255)" json:"tenNhom"`
+}
+
+func (ItemGroupCreation) TableName() string { return NhomHang{}.TableName() }
+
+type ItemGroupUpdate struct {
+	TenNhom *string `gorm:"column:ten_nhom;type:varchar(255)" json:"tenNhom"`
+}
+
+func (ItemGroupUpdate) TableName() string { return NhomHang{}.TableName() }
 
 type SanPham struct {
 	common.SQLModel
@@ -34,14 +54,16 @@ type SanPham struct {
 func (SanPham) TableName() string { return "san_phams" }
 
 type ProductCreation struct {
-	Id                    int            `gorm:"column:id" json:"-"`
+	common.SQLModel
 	MaHang                string         `gorm:"column:ma_hang;type:varchar(255)" json:"maHang"`
+	NhomHangID            uint           `gorm:"column:nhom_hang_id;index;foreignKey:NhomHangID" json:"nhomHangID"`
 	TenSanPham            string         `gorm:"column:ten_san_pham;type:varchar(255)" json:"tenSanPham"`
 	DonViTinh             string         `gorm:"column:don_vi_tinh;type:varchar(255)" json:"donViTinh"`
 	CoPhieuMoDau          float64        `gorm:"column:co_phieu_mo_dau" json:"coPhieuMoDau"`
 	DinhGia               float64        `gorm:"column:dinh_gia" json:"dinhGia"`
 	TyGiaBanHangTieuChuan float64        `gorm:"column:ty_gia_ban_hang_tieu_chuan" json:"tyGiaBanHangTieuChuan"`
 	ChiDinhLoaiTaiSan     string         `gorm:"column:chi_dinh_loai_tai_san;type:varchar(255)" json:"ChiDinhLoaiTaiSan"`
+	HanSuDung             *time.Time     `gorm:"column:han_su_dung" json:"hanSuDung"`
 	Status                *ProductStatus `gorm:"column:status;type:enum('selling','out_of_stock','deleted');default:'selling" json:"status"`
 }
 
@@ -49,17 +71,27 @@ func (ProductCreation) TableName() string { return SanPham{}.TableName() }
 
 // dung con tro de update duoc chuoi rong
 type ProductUpdate struct {
-	MaHang                *string        `gorm:"column:ma_hang " json:"maHang"`
-	TenSanPham            *string        `gorm:"column:ten_san_pham " json:"tenSanPham"`
-	DonViTinh             *string        `gorm:"column:don_vi_tinh " json:"donViTinh"`
-	CoPhieuMoDau          *string        `gorm:"column:co_phieu_mo_dau " json:"coPhieuMoDau"`
-	DinhGia               *string        `gorm:"column:dinh_gia " json:"dinhGia"`
-	TyGiaBanHangTieuChuan *float64       `gorm:"column:ty_gia_ban_hang_tieu_chuan" json:"tyGiaBanHangTieuChuan"`
-	ChiDinhLoaiTaiSan     *string        `gorm:"column:chi_dinh_loai_tai_san " json:"ChiDinhLoaiTaiSan"`
+	common.SQLModel
+	MaHang                string         `gorm:"column:ma_hang " json:"maHang"`
+	NhomHangID            uint           `gorm:"column:nhom_hang_id;index;foreignKey:NhomHangID" json:"nhomHangID"`
+	TenSanPham            string         `gorm:"column:ten_san_pham " json:"tenSanPham"`
+	DonViTinh             string         `gorm:"column:don_vi_tinh " json:"donViTinh"`
+	CoPhieuMoDau          string         `gorm:"column:co_phieu_mo_dau " json:"coPhieuMoDau"`
+	DinhGia               string         `gorm:"column:dinh_gia " json:"dinhGia"`
+	TyGiaBanHangTieuChuan float64        `gorm:"column:ty_gia_ban_hang_tieu_chuan" json:"tyGiaBanHangTieuChuan"`
+	ChiDinhLoaiTaiSan     string         `gorm:"column:chi_dinh_loai_tai_san " json:"ChiDinhLoaiTaiSan"`
+	HanSuDung             *time.Time     `gorm:"column:han_su_dung" json:"hanSuDung"`
 	Status                *ProductStatus `gorm:"column:status;type:enum('selling','out_of_stock','deleted');default:'selling" json:"status"`
 }
 
 func (ProductUpdate) TableName() string { return SanPham{}.TableName() }
+
+func (p *ProductUpdate) BeforeUpdate(tx *gorm.DB) (err error) {
+	if p.Status != nil {
+		tx.Statement.SetColumn("status", p.Status.String()) // Chuyển ProductStatus thành chuỗi
+	}
+	return nil
+}
 
 type KhoHang struct {
 	common.SQLModel

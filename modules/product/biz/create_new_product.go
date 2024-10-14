@@ -18,12 +18,13 @@ func CreateNewProductBiz(store CreateProductStorage) *createProductBiz {
 }
 
 func (biz *createProductBiz) CreateNewProduct(ctx context.Context, data *model.ProductCreation) error {
-	mahang := strings.TrimSpace(data.MaHang)
-	if mahang == "" {
+	// ... (Code kiểm tra ma_hang)
+	ma_hang := strings.TrimSpace(data.MaHang)
+	if ma_hang == "" {
 		return model.ErrMaHangIsBlank
 	}
 	if err := biz.store.CreateProduct(ctx, data); err != nil {
-		return err
+		return err // Trả về lỗi từ CreateProduct
 	}
 	return nil
 }
