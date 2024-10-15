@@ -65,27 +65,35 @@ func ListKhoHang(db *gorm.DB) func(*gin.Context) {
 }
 func UpdateKhoHang(db *gorm.DB) func(*gin.Context) {
 	return func(c *gin.Context) {
-		id, err := strconv.Atoi(c.Param("id")) // Lấy id từ URL
+		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id"})
 			return
 		}
+
 		var data model.KhoHangUpdate
 		if err := c.ShouldBind(&data); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+
 		store := storage.NewSqlStore(db)
 		business := biz.NewKhoHangBiz(store)
 
-		// Gọi đến business logic để cập nhật dữ liệu
 		if err := business.UpdateKhoHang(c.Request.Context(), id, &data); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, common.SimpleSuccessRespone(true))
+
+		// Lấy dữ liệu kho hàng đã cập nhật từ database
+		updatedKhoHang, err := store.FindKhoHang(c.Request.Context(), map[string]interface{}{"id": id})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy dữ liệu kho hàng"})
+			return
+		}
+
+		// Trả về dữ liệu kho hàng đã cập nhật cho frontend
+		c.JSON(http.StatusOK, common.SimpleSuccessRespone(updatedKhoHang))
 	}
 }
 func DeleteKhoHang(db *gorm.DB) func(*gin.Context) {
@@ -106,5 +114,31 @@ func DeleteKhoHang(db *gorm.DB) func(*gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, common.SimpleSuccessRespone(true))
+	}
+}
+
+func GetKhoHang(db *gorm.DB) func(*gin.Context) {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id"})
+			return
+		}
+
+		store := storage.NewSqlStore(db)
+		business := biz.NewKhoHangBiz(store)
+
+		khoHang, err := business.GetKhoHang(c.Request.Context(), id)
+		if err != nil {
+			if err == model.ErrKhoHangNotFound {
+				c.JSON(http.StatusNotFound, common.ErrCannotGetEntity(model.EntityNameKhoHang, err))
+				return
+			}
+
+			c.JSON(http.StatusInternalServerError, common.ErrCannotGetEntity(model.EntityNameKhoHang, err))
+			return
+		}
+
+		c.JSON(http.StatusOK, common.SimpleSuccessRespone(khoHang))
 	}
 }

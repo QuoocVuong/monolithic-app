@@ -1,11 +1,10 @@
 package producthandler
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin" // Gin framework cho web server
 	"gorm.io/gorm"             // GORM ORM cho database
+	"net/http"
+	"strconv"
 
 	"monolithic-app/common"                  // Các hàm và struct chung
 	"monolithic-app/modules/product/biz"     // Logic nghiệp vụ cho product

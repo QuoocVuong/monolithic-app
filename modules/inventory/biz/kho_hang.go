@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"gorm.io/gorm"
 	"monolithic-app/common"
 	"monolithic-app/modules/inventory/model"
 )
@@ -59,4 +60,16 @@ func (biz *khoHangBiz) DeleteKhoHang(ctx context.Context, id int) error {
 		return err
 	}
 	return nil
+}
+func (biz *khoHangBiz) GetKhoHang(ctx context.Context, id int) (*model.KhoHang, error) {
+	khoHang, err := biz.store.FindKhoHang(ctx, map[string]interface{}{"id": id})
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, model.ErrKhoHangNotFound
+		}
+		return nil, err
+	}
+
+	return khoHang, nil
 }

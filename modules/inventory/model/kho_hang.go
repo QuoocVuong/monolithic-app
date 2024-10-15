@@ -27,4 +27,8 @@ type KhoHangUpdate struct {
 
 var (
 	ErrKhoHangExisted = errors.New("tên kho hàng đã tồn tại")
+
+	ErrKhoHangNotFound = errors.New("kho hàng không tồn tại")
 )
+
+const EntityNameKhoHang = "Kho Hàng"

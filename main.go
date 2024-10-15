@@ -84,7 +84,7 @@ func main() {
 			khohangs.GET("", inventoryhandler.ListKhoHang(db))          // GET /v1/kho-hangs: Lấy danh sách kho hàng
 			khohangs.PATCH("/:id", inventoryhandler.UpdateKhoHang(db))  // PATCH /v1/kho-hangs/:id: Cập nhật kho hàng
 			khohangs.DELETE("/:id", inventoryhandler.DeleteKhoHang(db)) // DELETE /v1/kho-hangs/:id: Xóa kho hàng
-			//khohangs.GET("/:id", inventoryhandler.GetKhoHang(db))      // GET /v1/kho-hangs/:id: Lấy chi tiết kho hàng
+			khohangs.GET("/:id", inventoryhandler.GetKhoHang(db))       // GET /v1/kho-hangs/:id: Lấy chi tiết kho hàng
 		}
 
 		// Routes cho ton_kho
@@ -106,6 +106,7 @@ func main() {
 			dukienTonkhos.DELETE("/:id", inventoryhandler.DeleteDuKienTonKho(db)) // DELETE /v1/du-kien-ton-khos/:id: Xóa dự kiến tồn kho
 			//dukienTonkhos.GET("/:id", inventoryhandler.GetDuKienTonKho(db))      // GET /v1/du-kien-ton-khos/:id: Lấy chi tiết dự kiến tồn kho
 		}
+
 	}
 	fmt.Println("Server listening on port 8080...")
 	r.Run(":8080")

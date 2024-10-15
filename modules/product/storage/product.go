@@ -91,6 +91,7 @@ func (s *sqlStore) ListProduct(
 	if err := db.Order("id desc"). // Sắp xếp theo ID giảm dần
 					Offset((paging.Page - 1) * paging.Limit). // Bỏ qua số lượng bản ghi bằng (page-1)*limit
 					Limit(paging.Limit).                      // Giới hạn số lượng bản ghi trả về bằng limit
+					Preload("NhomHang").                      // Preload NhomHang
 					Find(&result).Error; err != nil {         // Tìm kiếm danh sách sản phẩm
 		return nil, err // Trả về lỗi nếu tìm kiếm thất bại
 	}

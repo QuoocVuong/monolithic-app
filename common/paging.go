@@ -14,6 +14,6 @@ func (p *Paging) Process() {
 		p.Page = 1 // Nếu Page <= 0, mặc định là trang 1
 	}
 	if p.Limit <= 0 || p.Limit >= 100 {
-		p.Limit = 5 // Nếu Limit <= 0 hoặc Limit >= 100, mặc định là 5 bản ghi/trang
+		p.Limit = 10 // Nếu Limit <= 0 hoặc Limit >= 100, mặc định là 5 bản ghi/trang
 	}
 }
