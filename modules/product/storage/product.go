@@ -67,34 +67,37 @@ func (s *sqlStore) DeleteProduct(ctx context.Context, cond map[string]interface{
 // ListProduct lấy danh sách sản phẩm từ database, hỗ trợ phân trang và lọc
 func (s *sqlStore) ListProduct(
 	ctx context.Context,
-	filter *model.Filterr, // Biến chứa thông tin lọc
-	paging *common.Paging, // Biến chứa thông tin phân trang
-	moreKeys ...string, // Danh sách các trường cần preload
+	filter *model.Filterr,
+	paging *common.Paging,
+	moreKeys ...string,
 ) ([]model.SanPham, error) {
-	var result []model.SanPham // Biến lưu trữ danh sách sản phẩm
+	var result []model.SanPham
 
-	db := s.db.Where("status <> ?", "Deleted") // Lọc bỏ các sản phẩm đã bị xóa
+	db := s.db.Table(model.SanPham{}.TableName()) // Sử dụng Table để chỉ định tên bảng rõ ràng
 
-	// Áp dụng lọc theo status nếu có
+	// --- Lọc sản phẩm chưa bị xóa ---
+	db = db.Where("status != ?", model.ProductStatusDeleted)
+
+	// Áp dụng lọc theo status nếu có (ngoài "deleted")
 	if f := filter; f != nil {
 		if v := f.Status; v != "" {
-			db = db.Where("status = ?", v)
+			db = db.Where("status = ?", v) // Lọc theo status khác
 		}
 	}
 
-	// Đếm tổng số sản phẩm thỏa mãn điều kiện
-	if err := db.Table(model.SanPham{}.TableName()).Count(&paging.Total).Error; err != nil {
-		return nil, err // Trả về lỗi nếu đếm thất bại
+	// Đếm tổng số sản phẩm (chưa bị xóa) thỏa mãn điều kiện
+	if err := db.Count(&paging.Total).Error; err != nil {
+		return nil, err
 	}
 
 	// Lấy danh sách sản phẩm với phân trang
-	if err := db.Order("id desc"). // Sắp xếp theo ID giảm dần
-					Offset((paging.Page - 1) * paging.Limit). // Bỏ qua số lượng bản ghi bằng (page-1)*limit
-					Limit(paging.Limit).                      // Giới hạn số lượng bản ghi trả về bằng limit
-					Preload("NhomHang").                      // Preload NhomHang
-					Find(&result).Error; err != nil {         // Tìm kiếm danh sách sản phẩm
-		return nil, err // Trả về lỗi nếu tìm kiếm thất bại
+	if err := db.Order("id desc").
+		Offset((paging.Page - 1) * paging.Limit).
+		Limit(paging.Limit).
+		Preload("NhomHang").
+		Find(&result).Error; err != nil {
+		return nil, err
 	}
 
-	return result, nil // Trả về danh sách sản phẩm và nil nếu tìm kiếm thành công
+	return result, nil
 }

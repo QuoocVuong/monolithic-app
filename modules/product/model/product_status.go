@@ -36,30 +36,31 @@ func parseStrtoProducStatus(s string) (ProductStatus, error) {
 }
 
 // Scan implement interface sql.Scanner để đọc dữ liệu từ database.
-func (product *ProductStatus) Scan(value interface{}) error {
-	if value == nil {
-		return nil // Không có lỗi nếu value là nil
-	}
-
-	// Chuyển đổi value (interface{}) sang []byte
-	byteVal, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("failed to scan ProductStatus: %v", value) // Trả về lỗi nếu chuyển đổi thất bại
-	}
-
-	// Chuyển đổi []byte sang string
-	strVal := string(byteVal)
-
-	// Chuyển đổi string sang ProductStatus
-	v, err := parseStrtoProducStatus(strVal)
-	if err != nil {
-		return fmt.Errorf("failed to parse ProductStatus: %v", err) // Trả về lỗi nếu parse thất bại
-	}
-
-	*product = v // Gán giá trị cho product
-	return nil   // Trả về nil nếu thành công
-}
-
+//
+//	func (product *ProductStatus) Scan(value interface{}) error {
+//		if value == nil {
+//			return nil // Không có lỗi nếu value là nil
+//		}
+//
+//		// Chuyển đổi value (interface{}) sang []byte
+//		byteVal, ok := value.([]byte)
+//		if !ok {
+//			return fmt.Errorf("failed to scan ProductStatus: %v", value) // Trả về lỗi nếu chuyển đổi thất bại
+//		}
+//
+//		// Chuyển đổi []byte sang string
+//		strVal := string(byteVal)
+//
+//		// Chuyển đổi string sang ProductStatus
+//		v, err := parseStrtoProducStatus(strVal)
+//		if err != nil {
+//			return fmt.Errorf("failed to parse ProductStatus: %v", err) // Trả về lỗi nếu parse thất bại
+//		}
+//
+//		*product = v // Gán giá trị cho product
+//		return nil   // Trả về nil nếu thành công
+//	}
+//
 // Value implement interface driver.Valuer để ghi dữ liệu vào database.
 func (product *ProductStatus) Value() (driver.Value, error) {
 	if product == nil {
@@ -91,6 +92,40 @@ func (product *ProductStatus) UnmarshalJSON(data []byte) error {
 	v, err := parseStrtoProducStatus(strVal)
 	if err != nil {
 		return fmt.Errorf("failed to parse ProductStatus: %w", err) // Trả về lỗi nếu parse thất bại
+	}
+
+	*product = v // Gán giá trị cho product
+	return nil   // Trả về nil nếu thành công
+}
+
+// Scan implement interface sql.Scanner để đọc dữ liệu từ database.
+func (product *ProductStatus) Scan(value interface{}) error {
+	fmt.Println("Value received in Scan:", value) // Thêm dòng này để debug
+
+	if value == nil {
+		return nil // Không có lỗi nếu value là nil
+	}
+
+	// Xử lý trường hợp chuỗi rỗng
+	if strValue, ok := value.(string); ok && strValue == "" {
+		*product = ProductStatusSelling // Hoặc một giá trị mặc định khác, ví dụ: ProductStatus(0)
+		return nil
+	}
+
+	// Chuyển đổi value (interface{}) sang string
+	strVal, ok := value.(string)
+	if !ok {
+		byteVal, ok := value.([]byte) // Nếu không phải string, thử chuyển sang []byte
+		if !ok {
+			return fmt.Errorf("failed to scan ProductStatus: %v, type: %T", value, value) // Hiển thị cả type của value để debug
+		}
+		strVal = string(byteVal)
+	}
+
+	// Chuyển đổi string sang ProductStatus
+	v, err := parseStrtoProducStatus(strVal)
+	if err != nil {
+		return fmt.Errorf("failed to parse ProductStatus: %v", err) // Trả về lỗi nếu parse thất bại
 	}
 
 	*product = v // Gán giá trị cho product

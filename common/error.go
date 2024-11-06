@@ -3,47 +3,78 @@ package common
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
-// BaseError là struct chứa thông tin lỗi cơ bản.
-type BaseError struct {
-	StatusCode int    `json:"status_code"`
-	RootError  error  `json:"-"` // Không serialize RootError
-	Message    string `json:"message"`
-	Log        string `json:"log"`
-	Key        string `json:"error_key"`
+// AppError là struct chứa thông tin lỗi.
+type AppError struct {
+	StatusCode int         `json:"status_code"`
+	RootErr    error       `json:"-"`
+	Message    string      `json:"message"`
+	Log        string      `json:"log"`
+	Key        string      `json:"error_key"`
+	Data       interface{} `json:"data"`
+	RootError  any
 }
 
-// Error trả về thông báo lỗi.
-func (e BaseError) Error() string {
+func (e *AppError) Error() string {
 	return e.Message
 }
 
-// NewBaseError tạo một BaseError mới.
-func NewBaseError(root error, msg string, log string, key string) *BaseError {
-	return &BaseError{
-		RootError: root,
-		Message:   msg,
-		Log:       log,
-		Key:       key,
+func NewErrorResponse(root error, msg, log, key string, statusCode int) *AppError {
+	return &AppError{
+		StatusCode: statusCode,
+		RootErr:    root,
+		Message:    msg,
+		Log:        log,
+		Key:        key,
 	}
 }
 
-// NewCustomError tạo một lỗi custom với message và key.
-func NewCustomError(root error, message string, key string) *BaseError {
+func ErrCannotListEntity(entity string, err error) *AppError {
+	return NewCustomError(
+		err,
+		fmt.Sprintf("cannot list %s: %v", entity, err),
+		fmt.Sprintf("ErrCannotList%s", entity),
+		http.StatusBadRequest,
+	)
+}
+
+// ErrInvalidRequest lỗi request không hợp lệ.
+func ErrInvalidRequest(err error) *AppError {
+	return NewErrorResponse(err, "Invalid request: %v", err.Error(), "ErrInvalidRequest", http.StatusBadRequest)
+}
+
+// ErrInternal lỗi server nội bộ.
+func ErrInternal(err error) *AppError {
+	return NewErrorResponse(err, "Something went wrong in the server", err.Error(), "ErrInternal", http.StatusInternalServerError)
+}
+
+// ErrCannotGetEntity lỗi khi không thể lấy entity.
+func ErrCannotGetEntity(entity string, err error) *AppError {
+	return NewCustomError(
+		err,
+		fmt.Sprintf("không thể lấy %s", entity),
+		fmt.Sprintf("err.cannotGet%s", entity),
+		http.StatusBadRequest,
+	)
+}
+
+// Các hàm lỗi khác (từ code cũ của bạn):
+func NewCustomError(root error, msg string, key string, statusCode int) *AppError {
 	if root != nil {
-		return NewBaseError(root, message, root.Error(), key)
+		return NewErrorResponse(root, msg, root.Error(), key, statusCode)
 	}
 
-	return NewBaseError(errors.New(message), message, message, key)
+	return NewErrorResponse(errors.New(msg), msg, msg, key, statusCode)
 }
 
-// NewFullErrorResponse tạo một response lỗi đầy đủ.
-func NewFullErrorResponse(err error) gin.H {
+func NewFullErrorResponse(err error) gin.H { // Giữ nguyên hàm này nếu bạn vẫn cần sử dụng
 	res := gin.H{"error": err.Error()}
 
-	if e, ok := err.(*BaseError); ok {
+	if e, ok := err.(*AppError); ok {
 		res["error"] = e.Message
 		res["root_cause"] = e.RootError
 	}
@@ -51,13 +82,12 @@ func NewFullErrorResponse(err error) gin.H {
 	return res
 }
 
-// ErrCannotGetEntity lỗi khi không thể lấy entity.
-func ErrCannotGetEntity(entity string, err error) *BaseError {
-	return NewCustomError(
-		err,
-		fmt.Sprintf("không thể lấy %s", entity),
-		fmt.Sprintf("err.cannotGet%s", entity),
-	)
-}
+// ErrCannotListEntity, ErrCannotDeleteEntity,... (các hàm lỗi khác - giữ nguyên)
 
-// ... (các hàm error khác trong common package)
+func (e *AppError) GinH() gin.H {
+	return gin.H{
+		"message": e.Message,
+		"error":   e.Key,
+		"data":    e.Data,
+	}
+}

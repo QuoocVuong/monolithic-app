@@ -65,16 +65,15 @@ func (ProductCreation) TableName() string { return SanPham{}.TableName() }
 // Sử dụng con trỏ cho phép cập nhật các trường thành giá trị rỗng
 type ProductUpdate struct {
 	common.SQLModel                      // Struct nhúng từ common, chứa các trường ID, CreatedAt, UpdatedAt, DeletedAt
-	MaHang                string         `gorm:"column:ma_hang " json:"maHang"`                                                              // Mã hàng
-	NhomHangID            uint           `gorm:"column:nhom_hang_id;index;foreignKey:NhomHangID" json:"nhomHangID"`                          // ID của nhóm hàng
-	TenSanPham            string         `gorm:"column:ten_san_pham " json:"tenSanPham"`                                                     // Tên sản phẩm
-	DonViTinh             string         `gorm:"column:don_vi_tinh " json:"donViTinh"`                                                       // Đơn vị tính
-	CoPhieuMoDau          string         `gorm:"column:co_phieu_mo_dau " json:"coPhieuMoDau"`                                                // Cổ phiếu mở đầu
-	DinhGia               string         `gorm:"column:dinh_gia " json:"dinhGia"`                                                            // Định giá
-	TyGiaBanHangTieuChuan float64        `gorm:"column:ty_gia_ban_hang_tieu_chuan" json:"tyGiaBanHangTieuChuan"`                             // Tỷ giá bán hàng tiêu chuẩn
-	ChiDinhLoaiTaiSan     string         `gorm:"column:chi_dinh_loai_tai_san " json:"ChiDinhLoaiTaiSan"`                                     // Chỉ định loại tài sản
-	HanSuDung             *time.Time     `gorm:"column:han_su_dung" json:"hanSuDung"`                                                        // Hạn sử dụng
-	Status                *ProductStatus `gorm:"column:status;type:enum('selling','out_of_stock','deleted');default:'selling" json:"status"` // Trạng thái sản phẩm
+	MaHang                string         `gorm:"column:ma_hang" json:"maHang"`
+	NhomHangID            uint           `gorm:"column:nhom_hang_id;index;foreignKey:NhomHangID" json:"nhomHangID"`
+	TenSanPham            string         `gorm:"column:ten_san_pham" json:"tenSanPham"`
+	DonViTinh             string         `gorm:"column:don_vi_tinh" json:"donViTinh"`
+	CoPhieuMoDau          string         `gorm:"column:co_phieu_mo_dau" json:"coPhieuMoDau"`
+	DinhGia               string         `gorm:"column:dinh_gia" json:"dinhGia"`
+	TyGiaBanHangTieuChuan string         `gorm:"column:ty_gia_ban_hang_tieu_chuan" json:"tyGiaBanHangTieuChuan"`
+	ChiDinhLoaiTaiSan     string         `gorm:"column:chi_dinh_loai_tai_san" json:"ChiDinhLoaiTaiSan"`
+	Status                *ProductStatus `gorm:"column:status;type:enum('selling','out_of_stock','deleted');default:'selling" json:"status"`
 }
 
 // TableName định nghĩa tên bảng cho model ProductUpdate

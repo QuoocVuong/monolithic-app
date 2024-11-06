@@ -1,6 +1,7 @@
 package producthandler
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin" // Gin framework cho web server
 	"gorm.io/gorm"             // GORM ORM cho database
 	"net/http"
@@ -46,7 +47,7 @@ func ListProduct(db *gorm.DB) func(*gin.Context) {
 
 		// Lấy thông tin phân trang từ query parameters
 		if err := c.ShouldBind(&paging); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, common.NewFullErrorResponse(common.ErrInvalidRequest(err)))
 			return
 		}
 		paging.Process() // Xử lý thông tin phân trang
@@ -55,7 +56,7 @@ func ListProduct(db *gorm.DB) func(*gin.Context) {
 
 		// Lấy thông tin lọc từ query parameters
 		if err := c.ShouldBind(&filter); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, common.NewFullErrorResponse(common.ErrInvalidRequest(err)))
 			return
 		}
 
@@ -65,7 +66,7 @@ func ListProduct(db *gorm.DB) func(*gin.Context) {
 		// Gọi hàm ListProductById trong biz để lấy danh sách sản phẩm
 		result, err := business.ListProductById(c.Request.Context(), &filter, &paging)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, common.NewFullErrorResponse(err))
 			return
 		}
 
@@ -81,7 +82,7 @@ func GetProduct(db *gorm.DB) func(*gin.Context) {
 		// Lấy ID từ URL parameters
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, common.NewFullErrorResponse(common.ErrInvalidRequest(err)))
 			return
 		}
 
@@ -91,12 +92,15 @@ func GetProduct(db *gorm.DB) func(*gin.Context) {
 		// Gọi hàm GetProductById trong biz để lấy chi tiết sản phẩm
 		data, err := business.GetProductById(c.Request.Context(), id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			if errors.Is(err, gorm.ErrRecordNotFound) { // Kiểm tra nếu sản phẩm không tồn tại
+				c.JSON(http.StatusNotFound, common.NewFullErrorResponse(common.ErrCannotGetEntity("sản phẩm", err))) // Trả về 404 Not Found
+				return
+			}
+			c.JSON(http.StatusInternalServerError, common.NewFullErrorResponse(err)) // Xử lý các lỗi khác
 			return
 		}
-
-		// Trả về response thành công với ID của sản phẩm
-		c.JSON(http.StatusCreated, common.SimpleSuccessRespone(data.Id))
+		// Trả về TOÀN BỘ OBJECT SẢN PHẨM, không chỉ ID
+		c.JSON(http.StatusOK, common.SimpleSuccessRespone(data)) // Sử dụng 200 OK cho GET request thành công
 	}
 }
 
@@ -135,25 +139,61 @@ func UpdateProduct(db *gorm.DB) func(*gin.Context) {
 
 // DeleteProduct là handler cho route DELETE /v1/products/:id
 // Xóa một sản phẩm theo ID.
-func DeleteProduct(db *gorm.DB) func(*gin.Context) {
+//
+//	func DeleteProduct(db *gorm.DB) func(*gin.Context) {
+//		return func(c *gin.Context) {
+//			// Lấy ID từ URL parameters
+//			id, err := strconv.Atoi(c.Param("id"))
+//			if err != nil {
+//				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+//				return
+//			}
+//
+//			store := storage.NewSqlStore(db)           // Tạo đối tượng storage
+//			business := biz.NewDeleteProductBiz(store) // Tạo đối tượng biz
+//
+//			// Gọi hàm DeleteProductById trong biz để xóa sản phẩm
+//			if err := business.DeleteProductById(c.Request.Context(), id); err != nil {
+//				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+//				return
+//			}
+//
+//			// Trả về response thành công
+//			c.JSON(http.StatusCreated, common.SimpleSuccessRespone(true))
+//		}
+//	}
+func DeleteProduct(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Lấy ID từ URL parameters
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		store := storage.NewSqlStore(db)           // Tạo đối tượng storage
-		business := biz.NewDeleteProductBiz(store) // Tạo đối tượng biz
+		statusDeleted := model.ProductStatusDeleted // Hoặc giá trị tương ứng
 
-		// Gọi hàm DeleteProductById trong biz để xóa sản phẩm
-		if err := business.DeleteProductById(c.Request.Context(), id); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// Tìm sản phẩm trước để kiểm tra xem nó có tồn tại không
+		var product model.SanPham
+		if err := db.First(&product, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Trả về response thành công
-		c.JSON(http.StatusCreated, common.SimpleSuccessRespone(true))
+		// Kiểm tra xem sản phẩm đã bị xóa chưa
+		if product.Status != nil && *product.Status == statusDeleted {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Product already deleted"})
+			return
+		}
+
+		if err := db.Model(&model.SanPham{}).Where("id = ?", id).Update("status", statusDeleted).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, common.SimpleSuccessRespone(true))
 	}
 }
