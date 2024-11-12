@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv/autoload" // autoload .env.docker
 	"log"
 	"monolithic-app/configuration"
 	"monolithic-app/database"
@@ -18,10 +18,12 @@ import (
 )
 
 func main() {
-	// 1. Load config từ file .env
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+
+	//Khi nào dùng docker compose thì xóa lệnh if godotenv
+	//1. Load config từ file .env.docker
+	//if err := godotenv.Load(); err != nil {
+	//	log.Fatal("Error loading .env.docker file")
+	//}
 
 	cfg, err := configuration.LoadConfig()
 	if err != nil {
@@ -110,4 +112,5 @@ func main() {
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal("Error running server:", err)
 	}
+
 }

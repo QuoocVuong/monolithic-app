@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"strings"
+	"time"
 
 	"monolithic-app/common"                // Package common chứa các hàm và struct chung
 	"monolithic-app/modules/product/model" // Package model chứa các model cho product
@@ -13,10 +14,10 @@ import (
 // ListProductStorage là interface định nghĩa các hàm cần thiết cho việc lấy danh sách sản phẩm.
 type ListProductStorage interface {
 	ListProduct(
-		ctx context.Context,   // Context của request
+		ctx context.Context, // Context của request
 		filter *model.Filterr, // Biến chứa thông tin lọc
 		paging *common.Paging, // Biến chứa thông tin phân trang
-		moreKeys ...string,    // Danh sách các trường cần preload
+		moreKeys ...string, // Danh sách các trường cần preload
 	) ([]model.SanPham, error) // Trả về danh sách sản phẩm và lỗi (nếu có)
 }
 
@@ -133,6 +134,15 @@ func (biz *updateProductBiz) UpdateProductById(ctx context.Context, id int, data
 	if data.Status != nil && *data.Status == model.ProductStatusDeleted {
 		return model.ErrProductDeleted // Trả về lỗi nếu sản phẩm đã bị xóa
 	}
+	// Kiểm tra nếu trạng thái được cập nhật là "Deleted"
+	if *dataUpdate.Status == model.ProductStatusDeleted {
+		// Cập nhật DeletedAt thành thời gian hiện tại
+		now := time.Now()
+		dataUpdate.DeletedAt = &now
+	} else {
+		// Nếu trạng thái không phải "Deleted", xóa DeletedAt
+		dataUpdate.DeletedAt = nil // Reset DeletedAt
+	}
 
 	// Gọi hàm UpdateProduct trong store để cập nhật sản phẩm trong database
 	if err := biz.store.UpdateProduct(ctx, map[string]interface{}{"id": id}, dataUpdate); err != nil {
@@ -167,9 +177,9 @@ func (biz *deleteProductBiz) DeleteProductById(ctx context.Context, id int) erro
 		return err // Trả về lỗi nếu lấy thông tin sản phẩm thất bại
 	}
 
-	// Kiểm tra xem sản phẩm đã bị xóa hay chưa
-	if data.Status != nil && *data.Status == model.ProductStatusDeleted {
-		return model.ErrProductDeleted // Trả về lỗi nếu sản phẩm đã bị xóa
+	// Kiểm tra xem sản phẩm đã bị soft delete hay chưa
+	if *data.Status == model.ProductStatusDeleted {
+		return model.ErrProductDeleted // Trả về lỗi nếu sản phẩm đã bị soft delete
 	}
 
 	// Gọi hàm DeleteProduct trong store để xóa sản phẩm trong database

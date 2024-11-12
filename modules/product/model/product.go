@@ -2,9 +2,9 @@ package model
 
 import (
 	"errors"
+	"gorm.io/gorm"
 	"time"
 
-	"gorm.io/gorm"
 	"monolithic-app/common" // Package common chứa các struct và hàm chung
 
 	"monolithic-app/modules/itemgroup/model" // Import model từ module itemgroup
@@ -66,7 +66,7 @@ func (ProductCreation) TableName() string { return SanPham{}.TableName() }
 type ProductUpdate struct {
 	common.SQLModel                      // Struct nhúng từ common, chứa các trường ID, CreatedAt, UpdatedAt, DeletedAt
 	MaHang                string         `gorm:"column:ma_hang" json:"maHang"`
-	NhomHangID            uint           `gorm:"column:nhom_hang_id;index;foreignKey:NhomHangID" json:"nhomHangID"`
+	NhomHangID            *uint          `gorm:"column:nhom_hang_id;index;foreignKey:NhomHangID" json:"nhomHangID"`
 	TenSanPham            string         `gorm:"column:ten_san_pham" json:"tenSanPham"`
 	DonViTinh             string         `gorm:"column:don_vi_tinh" json:"donViTinh"`
 	CoPhieuMoDau          string         `gorm:"column:co_phieu_mo_dau" json:"coPhieuMoDau"`
@@ -78,15 +78,6 @@ type ProductUpdate struct {
 
 // TableName định nghĩa tên bảng cho model ProductUpdate
 func (ProductUpdate) TableName() string { return SanPham{}.TableName() }
-
-// BeforeUpdate là hook được gọi trước khi cập nhật sản phẩm
-// Chuyển ProductStatus thành chuỗi để lưu vào database
-func (p *ProductUpdate) BeforeUpdate(tx *gorm.DB) (err error) {
-	if p.Status != nil {
-		tx.Statement.SetColumn("status", p.Status.String())
-	}
-	return nil
-}
 
 // ======================================= INVENTORY =======================================
 
@@ -117,4 +108,12 @@ type DuKienTonKho struct {
 	NgayDuKien      *time.Time `gorm:"column:ngay_du_kien" json:"ngayDuKien"`               // Ngày dự kiến tồn kho
 	SanPham         SanPham    `gorm:"foreignKey:SanPhamID" json:"sanPham"`                 // Sản phẩm (foreign key)
 	KhoHang         KhoHang    `gorm:"foreignKey:KhoHangID" json:"khoHang"`                 // Kho hàng (foreign key)
+}
+
+// Trong model/product.go
+func (SanPham) BeforeUpdate(tx *gorm.DB) (err error) {
+	if tx.Statement.Changed("status") {
+		tx.Statement.SetColumn("deleted_at", time.Now())
+	}
+	return
 }

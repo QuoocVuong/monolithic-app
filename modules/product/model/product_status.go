@@ -100,7 +100,6 @@ func (product *ProductStatus) UnmarshalJSON(data []byte) error {
 
 // Scan implement interface sql.Scanner để đọc dữ liệu từ database.
 func (product *ProductStatus) Scan(value interface{}) error {
-	fmt.Println("Value received in Scan:", value) // Thêm dòng này để debug
 
 	if value == nil {
 		return nil // Không có lỗi nếu value là nil

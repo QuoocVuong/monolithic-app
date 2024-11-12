@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"gorm.io/gorm"
-
 	"monolithic-app/common"                // Package common chứa các hàm và struct chung
 	"monolithic-app/modules/product/model" // Package model chứa các model cho product
 )
@@ -47,7 +46,7 @@ func (s *sqlStore) GetProduct(ctx context.Context, cond map[string]interface{}) 
 // UpdateProduct cập nhật thông tin một sản phẩm trong database dựa trên điều kiện cond
 func (s *sqlStore) UpdateProduct(ctx context.Context, cond map[string]interface{}, dataUpdate *model.ProductUpdate) error {
 	// Cập nhật sản phẩm bằng GORM
-	if err := s.db.Where(cond).Updates(dataUpdate).Error; err != nil {
+	if err := s.db.Debug().Where(cond).Updates(dataUpdate).Error; err != nil {
 		return err // Trả về lỗi nếu cập nhật thất bại
 	}
 
@@ -76,7 +75,7 @@ func (s *sqlStore) ListProduct(
 	db := s.db.Table(model.SanPham{}.TableName()) // Sử dụng Table để chỉ định tên bảng rõ ràng
 
 	// --- Lọc sản phẩm chưa bị xóa ---
-	db = db.Where("status != ?", model.ProductStatusDeleted)
+	//db = db.Where("status != ?", model.ProductStatusDeleted)
 
 	// Áp dụng lọc theo status nếu có (ngoài "deleted")
 	if f := filter; f != nil {

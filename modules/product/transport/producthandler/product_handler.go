@@ -189,7 +189,7 @@ func DeleteProduct(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		if err := db.Model(&model.SanPham{}).Where("id = ?", id).Update("status", statusDeleted).Error; err != nil {
+		if err := db.Model(&model.SanPham{}).Where("id = ?", id).Update("status", &statusDeleted).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
